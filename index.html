@@ -1677,14 +1677,45 @@ async function startPayslipOCR() {
 
       // ── 1. จับรหัสพนักงาน ──
       let foundEmpCode = null, foundEmpName = null;
-      // Pattern: "รหัสพนักงาน" ตามด้วยรหัส
+
+      // ── match รหัสพนักงานจากสลิป ──
+      // 1. หา "รหัสพนักงาน" ตามด้วยรหัส (EMP001 หรือตัวเลข)
       const empCodeMatch = pageText.match(/รหัสพนักงาน[:\s]*([A-Z0-9\-]+)/i);
       if (empCodeMatch) foundEmpCode = empCodeMatch[1].trim().toUpperCase();
-      // fallback: EMP+ตัวเลข
+
+      // 2. fallback: EMP+ตัวเลข
       if (!foundEmpCode) {
         const m = pageText.match(/\b(EMP\d{3,})\b/i);
         if (m) foundEmpCode = m[1].toUpperCase();
       }
+
+      // 3. fallback: match รหัสตัวเลขตรงๆ กับรหัสพนักงานในระบบ
+      // (สำหรับสลิปที่รหัสเป็นตัวเลขอย่างเดียว เช่น 10001, 55555)
+      if (!foundEmpCode) {
+        const emps = getAllEmployees();
+        // แยกคำทุกคำในหน้า แล้วดูว่าตรงกับรหัสพนักงานไหม
+        const words = pageText.split(/\s+/);
+        for (const word of words) {
+          const clean = word.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          if (!clean) continue;
+          const matched = emps.find(e =>
+            e.empCode.toUpperCase() === clean ||
+            e.empCode.replace(/^EMP0*/i,'') === clean // EMP001 → 1, match กับ "1"
+          );
+          if (matched) { foundEmpCode = matched.empCode; break; }
+        }
+      }
+
+      // 4. fallback: match ชื่อพนักงานในระบบ
+      if (!foundEmpCode) {
+        const emps = getAllEmployees();
+        for (const emp of emps) {
+          if (pageText.includes(emp.name)) {
+            foundEmpCode = emp.empCode; break;
+          }
+        }
+      }
+
       if (foundEmpCode) {
         const ex = getAllEmployees().find(e => e.empCode === foundEmpCode);
         foundEmpName = ex ? ex.name : null;

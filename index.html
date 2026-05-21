@@ -462,6 +462,47 @@
   /* Admin selfie viewer */
   .emp-selfie-wrap { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
 
+
+  /* ── OT Panel ── */
+  .ot-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .ot-tab {
+    flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(144,115,44,0.25);
+    background: none; color: var(--text-dim); font-size: 15px;
+    font-family: 'Noto Sans Thai', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .ot-tab.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+  .ot-rate-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+  .ot-rate-btn {
+    flex: 1; padding: 12px; border-radius: 10px;
+    border: 1px solid rgba(144,115,44,0.25); background: none;
+    color: var(--text-dim); font-size: 15px; font-weight: 700;
+    font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.2s;
+  }
+  .ot-rate-btn.selected { background: rgba(144,115,44,0.2); color: var(--gold-shine); border-color: var(--gold-shine); }
+
+  .ot-item {
+    background: var(--card); border: 1px solid rgba(144,115,44,0.15);
+    border-radius: 12px; padding: 16px; margin-bottom: 10px;
+  }
+  .ot-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .ot-item-name { font-size: 15px; font-weight: 700; }
+  .ot-item-date { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+  .ot-item-detail { font-size: 15px; color: var(--text-mid); margin-bottom: 10px; }
+  .ot-item-rate { font-size: 13px; color: var(--gold-shine); font-family: 'Space Mono', monospace; }
+  .ot-status-pending  { background: rgba(202,111,30,0.15); color: #e6923a; border: 1px solid rgba(202,111,30,0.3); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .ot-status-approved { background: rgba(46,139,87,0.15);  color: #3dbb74; border: 1px solid rgba(46,139,87,0.3);  padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .ot-status-rejected { background: rgba(212,32,39,0.15);  color: var(--red-light); border: 1px solid rgba(212,32,39,0.3); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+  /* Admin OT approve */
+  .ot-approve-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .ot-rate-select {
+    flex: 1; background: var(--dark3); border: 1px solid rgba(144,115,44,0.3);
+    border-radius: 8px; padding: 9px 10px; color: var(--text);
+    font-size: 14px; font-family: 'Noto Sans Thai', sans-serif;
+    -webkit-appearance: none; outline: none;
+  }
+
   /* History Panel */
   .section-title { font-size: 15px; color: var(--gold-shine); letter-spacing: 2px; margin-bottom: 14px; text-transform: uppercase; font-family: 'Space Mono', monospace; }
   .history-item {
@@ -780,6 +821,47 @@
       </div>
     </div>
 
+    <!-- OT -->
+    <div class="panel" id="panelOT">
+      <div class="ot-tabs">
+        <button class="ot-tab active" onclick="otTab('form',this)">ขอ OT</button>
+        <button class="ot-tab" onclick="otTab('list',this)">ประวัติ OT</button>
+      </div>
+      <div id="otFormView">
+        <div class="leave-form">
+          <h3>⏰ ยื่นคำขอทำ OT</h3>
+          <div class="field-group">
+            <span class="field-label">วันที่ทำ OT</span>
+            <div class="custom-date-wrap">
+              <div class="custom-select-btn" onclick="openDatePicker('otDate','otDateDisplay')">
+                <span id="otDateDisplay">เลือกวันที่</span>
+                <span style="color:var(--gold-shine);">📅</span>
+              </div>
+              <input type="date" id="otDate" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="field-group" style="margin-bottom:0;">
+              <span class="field-label">เวลาเริ่ม OT</span>
+              <input type="text" id="otStart" placeholder="18:00" maxlength="5" inputmode="numeric">
+            </div>
+            <div class="field-group" style="margin-bottom:0;">
+              <span class="field-label">เวลาสิ้นสุด</span>
+              <input type="text" id="otEnd" placeholder="21:00" maxlength="5" inputmode="numeric">
+            </div>
+          </div>
+          <div class="field-group" style="margin-top:10px;">
+            <span class="field-label">เหตุผล</span>
+            <textarea id="otReason" rows="3" placeholder="ระบุเหตุผลการทำ OT..."></textarea>
+          </div>
+          <button class="btn-submit" onclick="submitOT()" style="background:linear-gradient(135deg,#1a3f6b,#2471A3);">⏰ ยื่นคำขอ OT</button>
+        </div>
+      </div>
+      <div id="otListView" style="display:none;">
+        <div id="otListItems"></div>
+      </div>
+    </div>
+
     <!-- SCHEDULE -->
     <div class="panel" id="panelSchedule">
       <div class="week-nav">
@@ -802,6 +884,7 @@
       <div class="admin-tabs">
         <button class="admin-tab active" onclick="adminTab('status',this)">📊 สถานะ</button>
         <button class="admin-tab" onclick="adminTab('leave',this)">📋 คำขอลา</button>
+        <button class="admin-tab" onclick="adminTab('ot',this)">⏰ OT</button>
         <button class="admin-tab" onclick="adminTab('report',this)">📈 รายงาน</button>
         <button class="admin-tab" onclick="adminTab('employees',this)">👥 พนักงาน</button>
         <button class="admin-tab" onclick="adminTab('shift',this)">🗓 อัปโหลดกะ</button>
@@ -995,6 +1078,10 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       <span>ประวัติ</span>
     </button>
+    <button class="nav-btn" id="navOT" onclick="showPanel('OT')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><path d="M16 16l2 2"/></svg>
+      <span>OT</span>
+    </button>
     <button class="nav-btn" id="navLeave" onclick="showPanel('Leave')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>ลา</span>
@@ -1153,7 +1240,7 @@ function closeDatePicker() {
 
 
 // ======= GOOGLE SHEETS API =======
-const API_URL = 'https://script.google.com/macros/s/AKfycbwNPthhJcPjMoqI5esMNIlQ-r_frvwrKZYTrRrEVI8InllfvQKyVRUD9-v5Mty7VZOV/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwrJE0jIstVP6-wJQLrEyZaF_M15Mn5hD8H9OY2vCodeURlTw1DN3_z6E6S4FclEghh/exec';
 
 function api(action, data = {}) {
   // ส่งแบบ no-cors — ส่งไป Sheet ได้ แต่ไม่อ่าน response กลับ
@@ -1245,6 +1332,167 @@ function viewSelfie(src, label) {
     <img src="${src}" style="max-width:90vw;max-height:75vh;border-radius:12px;">
     <button class="selfie-preview-close" onclick="this.parentElement.remove()">✕ ปิด</button>`;
   document.body.appendChild(div);
+}
+
+
+// ======= OT SYSTEM =======
+function getOTs() { try { return JSON.parse(localStorage.getItem('shiniji_ots') || '[]'); } catch { return []; } }
+function saveOTs(arr) { localStorage.setItem('shiniji_ots', JSON.stringify(arr)); }
+
+function otTab(tab, btn) {
+  document.querySelectorAll('.ot-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('otFormView').style.display = tab === 'form' ? 'block' : 'none';
+  document.getElementById('otListView').style.display = tab === 'list' ? 'block' : 'none';
+  if (tab === 'list') renderOTList();
+}
+
+function submitOT() {
+  const date   = document.getElementById('otDate').value;
+  const start  = document.getElementById('otStart').value.trim();
+  const end    = document.getElementById('otEnd').value.trim();
+  const reason = document.getElementById('otReason').value.trim();
+
+  if (!date)   { showToast('กรุณาเลือกวันที่', 'error'); return; }
+  if (!start || !end) { showToast('กรุณากรอกเวลาเริ่มและสิ้นสุด', 'error'); return; }
+  if (!/^\d{1,2}:\d{2}$/.test(start) || !/^\d{1,2}:\d{2}$/.test(end)) {
+    showToast('รูปแบบเวลาไม่ถูกต้อง (HH:MM)', 'error'); return;
+  }
+
+  // คำนวณชั่วโมง OT
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let hours = (eh * 60 + em - sh * 60 - sm) / 60;
+  if (hours <= 0) hours += 24; // ข้ามคืน
+
+  const ot = {
+    id: Date.now(), empCode: currentUser.empCode, empName: currentUser.name,
+    empId: currentUser.id, date, start, end,
+    hours: parseFloat(hours.toFixed(2)),
+    reason, status: 'pending', rate: null, createdAt: new Date().toISOString()
+  };
+
+  const ots = getOTs();
+  ots.push(ot);
+  saveOTs(ots);
+  document.getElementById('otReason').value = '';
+  showToast('ยื่นคำขอ OT แล้ว รอการอนุมัติ ✓');
+
+  // Telegram notify
+  const tg = getTgSettings();
+  if (getNotifySettings().leave && tg.token) {
+    const msg = `⏰ <b>SHINIJI — คำขอ OT ใหม่</b>\n👤 ${currentUser.name} (${currentUser.empCode})\n📅 ${date}\n🕐 ${start} — ${end} (${hours.toFixed(1)} ชม.)${reason ? '\n💬 ' + reason : ''}\n⏳ รอการอนุมัติ`;
+    sendTelegram(msg);
+  }
+
+  // Sync to Sheets
+  api('submitOT', ot);
+
+  if (currentUser.isAdmin) renderAdminOT();
+}
+
+function renderOTList() {
+  if (!currentUser) return;
+  const ots = getOTs().filter(o => o.empCode === currentUser.empCode).reverse();
+  const el = document.getElementById('otListItems');
+  if (!ots.length) { el.innerHTML = '<div class="empty-state">ไม่มีประวัติการขอ OT</div>'; return; }
+  el.innerHTML = ots.map(o => {
+    const statusCls = o.status === 'approved' ? 'ot-status-approved' : o.status === 'rejected' ? 'ot-status-rejected' : 'ot-status-pending';
+    const statusLbl = o.status === 'approved' ? `อนุมัติ ${o.rate ? '('+o.rate+'x)' : ''}` : o.status === 'rejected' ? 'ไม่อนุมัติ' : 'รอการอนุมัติ';
+    return `<div class="ot-item">
+      <div class="ot-item-header">
+        <div>
+          <div class="ot-item-name">⏰ OT วันที่ ${o.date}</div>
+          <div class="ot-item-date">${o.start} — ${o.end} · ${o.hours} ชม.</div>
+        </div>
+        <div class="${statusCls}">${statusLbl}</div>
+      </div>
+      ${o.reason ? `<div class="ot-item-detail">${o.reason}</div>` : ''}
+      ${o.status === 'approved' && o.rate ? `<div class="ot-item-rate">💰 OT รวม: ${(o.hours * o.rate).toFixed(2)} ชม. (${o.rate}x)</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Admin OT ──
+function renderAdminOT() {
+  const el = document.getElementById('adminOtList');
+  if (!el) return;
+  const ots = getOTs();
+  const pending = ots.filter(o => o.status === 'pending');
+  const all     = ots.slice().reverse();
+  if (!all.length) { el.innerHTML = '<div class="empty-state">ไม่มีคำขอ OT</div>'; return; }
+
+  const pendingHtml = pending.length ? `
+    <div class="section-title" style="margin-bottom:12px;">รอการอนุมัติ (${pending.length})</div>
+    ${pending.map(o => `<div class="ot-item">
+      <div class="ot-item-header">
+        <div>
+          <div class="ot-item-name">${o.empName}</div>
+          <div class="ot-item-date">📅 ${o.date} · ${o.start}–${o.end} · ${o.hours} ชม.</div>
+        </div>
+        <div class="ot-status-pending">รออนุมัติ</div>
+      </div>
+      ${o.reason ? `<div class="ot-item-detail">${o.reason}</div>` : ''}
+      <div class="ot-approve-btns">
+        <select class="ot-rate-select" id="otRate_${o.id}">
+          <option value="1.5">1.5x (ปกติ)</option>
+          <option value="2">2x (วันหยุด)</option>
+          <option value="3">3x (พิเศษ)</option>
+        </select>
+        <button class="btn-approve" onclick="approveOT(${o.id})">✓ อนุมัติ</button>
+        <button class="btn-reject"  onclick="rejectOT(${o.id})">✕ ปฏิเสธ</button>
+      </div>
+    </div>`).join('')}` : '';
+
+  const historyHtml = `
+    <div class="section-title" style="margin:16px 0 12px;">ประวัติ OT ทั้งหมด</div>
+    ${all.map(o => {
+      const sc = o.status === 'approved' ? 'ot-status-approved' : o.status === 'rejected' ? 'ot-status-rejected' : 'ot-status-pending';
+      const sl = o.status === 'approved' ? `อนุมัติ ${o.rate}x` : o.status === 'rejected' ? 'ไม่อนุมัติ' : 'รออนุมัติ';
+      return `<div class="ot-item">
+        <div class="ot-item-header">
+          <div>
+            <div class="ot-item-name">${o.empName} <span style="font-size:12px;color:var(--text-dim);">(${o.empCode})</span></div>
+            <div class="ot-item-date">📅 ${o.date} · ${o.start}–${o.end} · ${o.hours} ชม.</div>
+          </div>
+          <div class="${sc}">${sl}</div>
+        </div>
+        ${o.status === 'approved' ? `<div class="ot-item-rate">💰 ${(o.hours * o.rate).toFixed(2)} ชม.換算</div>` : ''}
+      </div>`;
+    }).join('')}`;
+
+  el.innerHTML = pendingHtml + historyHtml;
+}
+
+function approveOT(id) {
+  const rate = parseFloat(document.getElementById('otRate_' + id)?.value || '1.5');
+  const ots = getOTs();
+  const idx = ots.findIndex(o => o.id === id);
+  if (idx < 0) return;
+  ots[idx].status = 'approved';
+  ots[idx].rate = rate;
+  saveOTs(ots);
+  renderAdminOT();
+  showToast(`อนุมัติ OT ${rate}x แล้ว ✓`);
+  // Telegram notify พนักงาน (เฉพาะถ้ามี chat id ของพนักงาน — ตอนนี้แจ้งแอดมินด้วยกัน)
+  const o = ots[idx];
+  const tg = getTgSettings();
+  if (tg.token) sendTelegram(`✅ <b>OT อนุมัติแล้ว</b>\n👤 ${o.empName}\n📅 ${o.date} · ${o.start}–${o.end}\n⭐ อัตรา ${rate}x · รวม ${(o.hours*rate).toFixed(2)} ชม.`);
+  api('updateOT', { id, status: 'approved', rate });
+}
+
+function rejectOT(id) {
+  const ots = getOTs();
+  const idx = ots.findIndex(o => o.id === id);
+  if (idx < 0) return;
+  ots[idx].status = 'rejected';
+  saveOTs(ots);
+  renderAdminOT();
+  showToast('ปฏิเสธ OT แล้ว', 'warn');
+  const o = ots[idx];
+  const tg = getTgSettings();
+  if (tg.token) sendTelegram(`❌ <b>OT ไม่อนุมัติ</b>\n👤 ${o.empName}\n📅 ${o.date} · ${o.start}–${o.end}`);
+  api('updateOT', { id, status: 'rejected', rate: null });
 }
 
 // ======= CUSTOM DROPDOWN =======
@@ -1887,7 +2135,7 @@ function loginAs(emp) {
   renderHistory();
   renderLeaveList();
   renderSchedule();
-  if (emp.isAdmin) { renderAdminStatus(); renderLeaveRequests(); initReportMonths(); renderReport(); renderEmpMgmt(); renderAdminPayslipList(); }
+  if (emp.isAdmin) { renderAdminStatus(); renderLeaveRequests(); initReportMonths(); renderReport(); renderEmpMgmt(); renderAdminPayslipList(); setTimeout(renderAdminOT, 100); }
   renderSlipList();
   // Sync employees to Sheets on admin login
   if (emp.isAdmin) {
@@ -1906,6 +2154,11 @@ function loginAs(emp) {
   if (sd) sd.textContent = thaiLabel;
   if (ed) ed.textContent = thaiLabel;
   document.getElementById('payslipMonth').value = today.slice(0,7);
+  document.getElementById('otDate').value = today;
+  const [oy,om,od] = today.split('-');
+  const otLabel = `${parseInt(od)} ${THAI_M[parseInt(om)-1]} ${parseInt(oy)}`;
+  const otDd = document.getElementById('otDateDisplay');
+  if (otDd) otDd.textContent = otLabel;
 }
 
 // Auto-login as first employee for preview
@@ -2381,6 +2634,8 @@ function showPanel(name) {
   document.getElementById('nav' + name).classList.add('active');
   if (name === 'History') renderHistory();
   if (name === 'Slip') renderSlipList();
+  if (name === 'OT') renderOTList();
+  if (name === 'Admin') renderAdminOT();
   if (name === 'Schedule') renderSchedule();
   if (name === 'Admin') { renderAdminStatus(); renderLeaveRequests(); }
 }

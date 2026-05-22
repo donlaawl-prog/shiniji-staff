@@ -1673,70 +1673,83 @@ async function startPayslipOCR() {
       const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
 
       const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
+      const items = textContent.items.map(item => item.str.trim()).filter(s => s.length > 0);
+      const pageText = items.join(' ');
 
-      // ── 1. จับรหัสพนักงาน ──
+      // ── จับรหัสพนักงาน ──
+      // PDF.js อาจส่ง items ผิดลำดับ: "รหัส" ก่อน หรือ รหัสก่อน "รหัส"
       let foundEmpCode = null, foundEmpName = null;
 
-      // ── จับรหัสและชื่อจากสลิป ──
-      // PDF อาจแยก text items เป็นชิ้นๆ ให้ join ทั้งหมดและค้นหา pattern
+      for (let idx = 0; idx < items.length; idx++) {
+        const t = items[idx].trim();
 
-      // join items แบบมี space เพื่อให้ pattern match ได้
-      const itemsJoined = items.join(' ');
-
-      // 1. หา "รหัส XXXXX" (รองรับ space ระหว่างรหัสกับตัวเลข)
-      const rhatsMatch = itemsJoined.match(/รหัส\s+([A-Z0-9]+)/i);
-      if (rhatsMatch) foundEmpCode = rhatsMatch[1].trim().toUpperCase();
-
-      // 2. หา "รหัสพนักงาน XXXXX"
-      if (!foundEmpCode) {
-        const m2 = itemsJoined.match(/รหัสพนักงาน\s+([A-Z0-9]+)/i);
-        if (m2) foundEmpCode = m2[1].trim().toUpperCase();
+        // กรณี: "รหัส" แล้วตามด้วยรหัส (หน้าถัดไป 1-3 items)
+        if (t === 'รหัส' || t === 'รหัสพนักงาน') {
+          for (let k = 1; k <= 3; k++) {
+            const next = (items[idx+k]||'').trim();
+            if (/^[A-Z0-9]+$/i.test(next) && next.length >= 1) {
+              foundEmpCode = next.toUpperCase(); break;
+            }
+          }
+        }
+        // กรณี: รหัสอยู่ก่อน "รหัส" (item ก่อนหน้า)
+        if (!foundEmpCode && (t === 'รหัส' || t === 'รหัสพนักงาน') && idx > 0) {
+          for (let k = 1; k <= 3; k++) {
+            const prev = (items[idx-k]||'').trim();
+            if (/^[A-Z0-9]+$/i.test(prev) && prev.length >= 1) {
+              foundEmpCode = prev.toUpperCase(); break;
+            }
+          }
+        }
+        // กรณี: "รหัส XXXXX" ในตัวเดียวกัน
+        if (!foundEmpCode) {
+          const m = t.match(/^รหัส(?:พนักงาน)?\s*([A-Z0-9]+)$/i);
+          if (m) foundEmpCode = m[1].toUpperCase();
+        }
+        if (foundEmpCode) break;
       }
 
-      // 3. fallback: EMP+ตัวเลข
+      // fallback: EMP pattern
       if (!foundEmpCode) {
-        const m3 = itemsJoined.match(/\b(EMP\d{3,})\b/i);
-        if (m3) foundEmpCode = m3[1].toUpperCase();
+        const m = pageText.match(/(EMP\d{3,})/i);
+        if (m) foundEmpCode = m[1].toUpperCase();
       }
 
-      // 4. fallback: match กับรหัสพนักงานในระบบ (ทั้งตัวเลขและอักษร)
+      // fallback: match รหัสพนักงานในระบบ
       if (!foundEmpCode) {
         const emps = getAllEmployees();
-        // ลองหาทีละ item ก่อน
         for (const item of items) {
-          const clean = item.trim().replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          const clean = item.replace(/[^A-Z0-9]/gi,'').toUpperCase();
           if (clean.length < 1) continue;
           const matched = emps.find(e => e.empCode.toUpperCase() === clean);
           if (matched) { foundEmpCode = matched.empCode; break; }
         }
       }
 
-      // ── จับชื่อจากสลิป ──
-      // หา "ชื่อสกุล" หรือ "ชอสก" (เพราะ PDF แยกตัวอักษร) ตามด้วยชื่อ
+      // ── จับชื่อ ──
       let slipName = null;
-      const namePatterns = [
-        /ชื่อสกุล\s+((?:นาย|นาง|นางสาว|น\.ส\.|ดร\.|ด\.ร\.)[ก-๛\s\-A-Za-z]+)/,
-        /ชอสก[ลุ]*\s+((?:นาย|นาง|นางสาว|น\.ส\.)[ก-๛\s\-]+)/,
-        /ชื\s+((?:นาย|นาง|นางสาว)[ก-๛\s\-]+)/,
-      ];
-      for (const pat of namePatterns) {
-        const nm = itemsJoined.match(pat);
-        if (nm) { slipName = nm[1].trim().replace(/\s+/g, ' ').substring(0, 40); break; }
+      for (const item of items) {
+        if (/^(?:นาย|นาง(?:สาว)?|น\.ส\.)/.test(item) && item.length > 4) {
+          slipName = item.replace(/\s+/g,' ').trim().substring(0,50); break;
+        }
       }
 
-      // ── จับตำแหน่งจากสลิป ──
+      // ── จับตำแหน่ง ──
       let slipPos = null;
-      const posMatch = itemsJoined.match(/ตําแหน่ง\s+([ก-๛\s\-A-Za-z]+?)(?:\s+(?:บรหาร|ครัว|บรการ|การตลาด|บัญช|จัดซ|ทปร|พเศษ|ไมระบ))/);
-      if (posMatch) slipPos = posMatch[1].trim();
+      for (let idx = 0; idx < items.length; idx++) {
+        if (/ตํ?าแหน่ง/.test(items[idx])) {
+          // ตำแหน่งอยู่ใน item เดียวกัน หรือ item ถัดไป
+          const sameItem = items[idx].replace(/ตํ?าแหน่ง\s*/,'').trim();
+          if (sameItem.length > 1) { slipPos = sameItem.substring(0,30); break; }
+          const nextItem = (items[idx+1]||'').trim();
+          if (nextItem.length > 1 && !/^\d/.test(nextItem)) { slipPos = nextItem.substring(0,30); break; }
+        }
+      }
 
       if (foundEmpCode) {
-        const ex = getAllEmployees().find(e => e.empCode.toUpperCase() === foundEmpCode.toUpperCase());
+        const ex = getAllEmployees().find(e => e.empCode.toUpperCase() === foundEmpCode);
         foundEmpName = ex ? ex.name : (slipName || null);
-        foundEmpCode = ex ? ex.empCode : foundEmpCode; // ใช้รหัสจาก DB ถ้ามี
-      } else if (slipName) {
-        // ไม่มีรหัสในระบบ แต่มีชื่อ — เก็บไว้เพิ่มใหม่
-        foundEmpName = slipName;
+        foundEmpCode = ex ? ex.empCode : foundEmpCode;
       }
 
       // ── 2. จับเลขบัตรประชาชน → PIN = 4 ตัวหลัง ──
@@ -1818,7 +1831,12 @@ function confirmSavePayslip(month) {
   // Save slips
   const slips = getPayslips();
   const filtered = slips.filter(s => s.month !== month);
-  filtered.push({ month, pages, uploadedAt: Date.now() });
+  // ไม่เก็บรูปสลิปใน localStorage (ใหญ่เกิน quota) เก็บแค่ข้อมูลพนักงาน
+  const pagesNoImg = pages.map(p => ({
+    pageNum: p.pageNum, empCode: p.empCode, empName: p.empName,
+    pinFromId: p.pinFromId, isNew: p.isNew, uploadedAt: Date.now()
+  }));
+  filtered.push({ month, pages: pagesNoImg, uploadedAt: Date.now() });
   savePayslips(filtered);
 
   let msg = `✅ บันทึกสลิป ${pages.length} คน`;
